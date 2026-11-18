@@ -14,6 +14,7 @@ Para facilitar la operación y evitar comandos manuales, se han creado los sigui
 | **`validar-requisitos.bat`** | Raíz `sismopaz/` | **Diagnóstico completo:** Revisa versiones de Node.js, npm, servicio de PostgreSQL, conexión, las 31 tablas de `sismopaz_db`, compilación del backend, dependencias del frontend, estado de los puertos 3000 y 3001, y genera un reporte en pantalla y en `reporte-validacion.txt`. |
 | **`detener-todo.bat`** | Raíz `sismopaz/` | **Liberador de puertos:** Localiza y finaliza inmediatamente cualquier proceso escuchando en los puertos 3000 y 3001. |
 | **`iniciar-db.bat`** | `database/` | Valida la conexión a PostgreSQL; si la BD no existe la crea con su esquema de 31 tablas y datos semilla. Si ya existe, confirma su estado. |
+| **`resetear-db.bat`** | `database/` | **Limpieza y reseteo de BD:** Ofrece 3 opciones: (1) Vaciar tablas (TRUNCATE), (2) Vaciar + recargar datos semilla (03-seed-data.sql), o (3) Destruir y recrear toda la BD desde cero con 31 tablas. |
 | **`iniciar-backend.bat`** | `backend/` | Revisa dependencias, compila TypeScript si falta y arranca el backend NestJS en el puerto 3001. |
 | **`iniciar-frontend.bat`** | `frontend/` | Revisa dependencias y arranca el frontend Next.js en el puerto 3000. |
 
@@ -22,7 +23,7 @@ Para facilitar la operación y evitar comandos manuales, se han creado los sigui
 ## 🏗️ Arquitectura Desacoplada (Client-Server REST)
 
 - **Frontend:** Next.js 15 (App Router) + React 19 + Tailwind CSS (Puerto `3000`)
-- **Backend:** NestJS 10 + TypeORM + Passport JWT + bcrypt (Puerto `3001`)
+- **Backend:** NestJS 10 + TypeORM + Passport JWT + bcrypt (Puerto `3001` - Documentación en [`backend/API_REST.md`](backend/API_REST.md))
 - **Base de Datos:** PostgreSQL 18 (31 tablas relacionales, Puerto `5432`, BD: `sismopaz_db`)
 
 ---

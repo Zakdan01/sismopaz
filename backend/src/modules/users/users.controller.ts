@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { SolicitarSismologoDto } from './dto/solicitar-sismologo.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
@@ -29,5 +30,13 @@ export class UsersController {
     @Body() changePasswordDto: ChangePasswordDto,
   ) {
     return this.usersService.changePassword(idUsuario, changePasswordDto);
+  }
+
+  @Post('solicitar-sismologo')
+  async solicitarSismologo(
+    @CurrentUser('idUsuario') idUsuario: number,
+    @Body() dto: SolicitarSismologoDto,
+  ) {
+    return this.usersService.solicitarSismologo(idUsuario, dto);
   }
 }

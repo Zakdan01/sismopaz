@@ -108,7 +108,8 @@ CREATE TABLE IF NOT EXISTS perfiles_sismologo (
     numero_acreditacion       VARCHAR(100) NOT NULL,
     institucion_acreditadora  VARCHAR(100),
     fecha_verificacion        DATE,
-    vigente                   BOOLEAN NOT NULL DEFAULT TRUE
+    vigente                   BOOLEAN NOT NULL DEFAULT TRUE,
+    estado_solicitud          VARCHAR(50) NOT NULL DEFAULT 'APROBADA'
 );
 
 CREATE TABLE IF NOT EXISTS sesiones_usuario (

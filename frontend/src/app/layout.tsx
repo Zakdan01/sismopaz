@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import './globals.css';
 import { Header } from '../components/layout/Header';
 import { Sidebar } from '../components/layout/Sidebar';
@@ -10,7 +11,11 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Páginas públicas que no llevan barra lateral (Sidebar)
+  const isPublicStandalone = pathname === '/' || pathname === '/login' || pathname === '/register';
 
   return (
     <html lang="es">
@@ -23,13 +28,19 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body className="min-h-screen flex flex-col bg-bg-app">
-        <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-        <div className="flex flex-1 max-w-[1440px] w-full mx-auto">
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-          <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden min-w-0">
+        <Header onToggleSidebar={!isPublicStandalone ? () => setSidebarOpen(!sidebarOpen) : undefined} />
+        {isPublicStandalone ? (
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden min-w-0 max-w-[1440px] w-full mx-auto">
             {children}
           </main>
-        </div>
+        ) : (
+          <div className="flex flex-1 max-w-[1440px] w-full mx-auto">
+            <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+            <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden min-w-0">
+              {children}
+            </main>
+          </div>
+        )}
       </body>
     </html>
   );

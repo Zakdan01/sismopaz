@@ -60,6 +60,8 @@ export class AdminService {
             numeroAcreditacion: u.perfilSismologo.numeroAcreditacion,
             institucionAcreditadora: u.perfilSismologo.institucionAcreditadora,
             vigente: u.perfilSismologo.vigente,
+            estadoSolicitud: u.perfilSismologo.estadoSolicitud,
+            fechaVerificacion: u.perfilSismologo.fechaVerificacion,
           }
         : null,
     }));
@@ -114,42 +116,144 @@ export class AdminService {
       throw new NotFoundException('El rol especificado no existe');
     }
 
-    // Regla RF5.03: Si se asigna el rol Sismólogo, es obligatorio registrar la acreditación profesional
+    // Regla RF5.03: Si se asigna el rol Sismólogo, es obligatorio contar con acreditación profesional
     if (rol.nombre === RoleName.SISMOLOGO) {
-      if (!dto.numeroAcreditacion) {
+      // Tomar la matrícula enviada en el DTO o la que el usuario ya tenga aprobada/registrada previamente
+      const matricula =
+        (dto.numeroAcreditacion && dto.numeroAcreditacion.trim()) ||
+        usuario.perfilSismologo?.numeroAcreditacion;
+
+      if (!matricula) {
         throw new BadRequestException(
-          'Para asignar el rol Sismólogo es obligatorio ingresar el número de acreditación o matrícula profesional',
+          'Para asignar el rol Sismólogo es obligatorio contar con número de acreditación o matrícula profesional',
         );
       }
+
+      const institucion =
+        (dto.institucionAcreditadora && dto.institucionAcreditadora.trim()) ||
+        usuario.perfilSismologo?.institucionAcreditadora ||
+        'Observatorio San Calixto';
 
       let perfil = await this.perfilSismologoRepo.findOne({ where: { idUsuario } });
       if (!perfil) {
         perfil = this.perfilSismologoRepo.create({
           idUsuario,
-          numeroAcreditacion: dto.numeroAcreditacion,
-          institucionAcreditadora: dto.institucionAcreditadora || 'Observatorio San Calixto',
+          numeroAcreditacion: matricula,
+          institucionAcreditadora: institucion,
           fechaVerificacion: new Date().toISOString().split('T')[0],
           vigente: true,
+          estadoSolicitud: 'APROBADA',
         });
       } else {
-        perfil.numeroAcreditacion = dto.numeroAcreditacion;
-        perfil.institucionAcreditadora = dto.institucionAcreditadora || perfil.institucionAcreditadora;
+        perfil.numeroAcreditacion = matricula;
+        perfil.institucionAcreditadora = institucion;
         perfil.vigente = true;
+        perfil.estadoSolicitud = 'APROBADA';
+        perfil.fechaVerificacion = new Date().toISOString().split('T')[0];
       }
       await this.perfilSismologoRepo.save(perfil);
       usuario.perfilSismologo = perfil;
     }
 
-    // Agregar rol si no lo tiene
-    const alreadyHasRole = usuario.roles.some((r) => r.idRol === rol.idRol);
-    if (!alreadyHasRole) {
-      usuario.roles.push(rol);
-      await this.usuarioRepo.save(usuario);
-    }
+    // Regla de unicidad de rol: Reemplazar roles para que el usuario tenga exactamente 1 solo rol
+    usuario.roles = [rol];
+    await this.usuarioRepo.save(usuario);
 
     return {
-      mensaje: `Rol ${rol.nombre} asignado exitosamente al usuario`,
+      mensaje: `Rol ${rol.nombre} asignado exitosamente al usuario (rol único)`,
       roles: usuario.roles.map((r) => r.nombre),
+    };
+  }
+
+  async getSolicitudesSismologo() {
+    const qb = this.usuarioRepo
+      .createQueryBuilder('u')
+      .innerJoinAndSelect('u.perfilSismologo', 'ps', 'ps.estadoSolicitud = :estado', {
+        estado: 'PENDIENTE',
+      })
+      .leftJoinAndSelect('u.roles', 'r')
+      .orderBy('u.fechaActualizacion', 'DESC');
+
+    const users = await qb.getMany();
+
+    return users.map((u) => ({
+      idUsuario: u.idUsuario,
+      nombre: u.nombre,
+      apellidos: u.apellidos,
+      correo: u.correo,
+      telefono: u.telefono,
+      roles: u.roles.map((r) => r.nombre),
+      numeroAcreditacion: u.perfilSismologo.numeroAcreditacion,
+      institucionAcreditadora: u.perfilSismologo.institucionAcreditadora,
+      estadoSolicitud: u.perfilSismologo.estadoSolicitud,
+    }));
+  }
+
+  async aprobarSolicitud(idUsuario: number) {
+    const usuario = await this.usuarioRepo.findOne({
+      where: { idUsuario },
+      relations: ['roles', 'perfilSismologo'],
+    });
+
+    if (!usuario) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    if (!usuario.perfilSismologo || usuario.perfilSismologo.estadoSolicitud !== 'PENDIENTE') {
+      throw new BadRequestException('El usuario no tiene una solicitud pendiente de revisión');
+    }
+
+    const rolSismologo = await this.rolRepo.findOne({
+      where: { nombre: RoleName.SISMOLOGO },
+    });
+    if (!rolSismologo) {
+      throw new NotFoundException('El rol Sismólogo no se encuentra configurado en la base de datos');
+    }
+
+    // Actualizar perfil sismólogo
+    usuario.perfilSismologo.vigente = true;
+    usuario.perfilSismologo.fechaVerificacion = new Date().toISOString().split('T')[0];
+    usuario.perfilSismologo.estadoSolicitud = 'APROBADA';
+    await this.perfilSismologoRepo.save(usuario.perfilSismologo);
+
+    // Reemplazo estricto: el usuario pasa a ser exclusivamente Sismólogo
+    usuario.roles = [rolSismologo];
+    usuario.fechaActualizacion = new Date();
+    await this.usuarioRepo.save(usuario);
+
+    return {
+      mensaje: `Solicitud aprobada con éxito. El usuario ${usuario.nombre} ${usuario.apellidos} ahora cuenta con rol Sismólogo.`,
+      roles: usuario.roles.map((r) => r.nombre),
+      perfilSismologo: {
+        numeroAcreditacion: usuario.perfilSismologo.numeroAcreditacion,
+        institucionAcreditadora: usuario.perfilSismologo.institucionAcreditadora,
+        estadoSolicitud: usuario.perfilSismologo.estadoSolicitud,
+        vigente: usuario.perfilSismologo.vigente,
+      },
+    };
+  }
+
+  async rechazarSolicitud(idUsuario: number) {
+    const usuario = await this.usuarioRepo.findOne({
+      where: { idUsuario },
+      relations: ['perfilSismologo'],
+    });
+
+    if (!usuario) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    if (!usuario.perfilSismologo || usuario.perfilSismologo.estadoSolicitud !== 'PENDIENTE') {
+      throw new BadRequestException('El usuario no tiene una solicitud pendiente de revisión');
+    }
+
+    usuario.perfilSismologo.estadoSolicitud = 'RECHAZADA';
+    usuario.perfilSismologo.vigente = false;
+    await this.perfilSismologoRepo.save(usuario.perfilSismologo);
+
+    return {
+      mensaje: `La solicitud de acreditación del usuario ${usuario.nombre} ha sido rechazada. Mantiene su rol actual.`,
+      estadoSolicitud: 'RECHAZADA',
     };
   }
 

@@ -7,8 +7,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Usuario } from './entities/usuario.entity';
+import { PerfilSismologo } from './entities/perfil-sismologo.entity';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { SolicitarSismologoDto } from './dto/solicitar-sismologo.dto';
+import { RoleName } from '../../common/constants/roles.constant';
 
 @Injectable()
 export class UsersService {
@@ -17,6 +20,8 @@ export class UsersService {
   constructor(
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
+    @InjectRepository(PerfilSismologo)
+    private readonly perfilSismologoRepo: Repository<PerfilSismologo>,
   ) {}
 
   async getProfile(idUsuario: number) {
@@ -44,6 +49,8 @@ export class UsersService {
             numeroAcreditacion: usuario.perfilSismologo.numeroAcreditacion,
             institucionAcreditadora: usuario.perfilSismologo.institucionAcreditadora,
             vigente: usuario.perfilSismologo.vigente,
+            estadoSolicitud: usuario.perfilSismologo.estadoSolicitud,
+            fechaVerificacion: usuario.perfilSismologo.fechaVerificacion,
           }
         : null,
       suscripciones: usuario.suscripciones.map((s) => ({
@@ -53,6 +60,56 @@ export class UsersService {
         activa: s.activa,
         fechaSuscripcion: s.fechaSuscripcion,
       })),
+    };
+  }
+
+  async solicitarSismologo(idUsuario: number, dto: SolicitarSismologoDto) {
+    const usuario = await this.usuarioRepository.findOne({
+      where: { idUsuario },
+      relations: ['roles', 'perfilSismologo'],
+    });
+
+    if (!usuario) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    const yaEsSismologo = usuario.roles.some((r) => r.nombre === RoleName.SISMOLOGO);
+    if (yaEsSismologo) {
+      throw new BadRequestException('El usuario ya cuenta con el rol de Sismólogo');
+    }
+
+    if (usuario.perfilSismologo && usuario.perfilSismologo.estadoSolicitud === 'PENDIENTE') {
+      throw new BadRequestException('Ya cuentas con una solicitud de acreditación en proceso de revisión');
+    }
+
+    let perfil = usuario.perfilSismologo;
+    if (!perfil) {
+      perfil = this.perfilSismologoRepo.create({
+        idUsuario,
+        numeroAcreditacion: dto.numeroAcreditacion.trim(),
+        institucionAcreditadora: dto.institucionAcreditadora.trim(),
+        vigente: false,
+        fechaVerificacion: null,
+        estadoSolicitud: 'PENDIENTE',
+      });
+    } else {
+      perfil.numeroAcreditacion = dto.numeroAcreditacion.trim();
+      perfil.institucionAcreditadora = dto.institucionAcreditadora.trim();
+      perfil.vigente = false;
+      perfil.fechaVerificacion = null;
+      perfil.estadoSolicitud = 'PENDIENTE';
+    }
+
+    await this.perfilSismologoRepo.save(perfil);
+
+    return {
+      mensaje: 'Solicitud de acreditación enviada correctamente. El Administrador verificará su matrícula técnica.',
+      perfilSismologo: {
+        numeroAcreditacion: perfil.numeroAcreditacion,
+        institucionAcreditadora: perfil.institucionAcreditadora,
+        estadoSolicitud: perfil.estadoSolicitud,
+        vigente: perfil.vigente,
+      },
     };
   }
 
@@ -82,6 +139,10 @@ export class UsersService {
   }
 
   async changePassword(idUsuario: number, changePasswordDto: ChangePasswordDto) {
+    if (changePasswordDto.passwordNuevo !== changePasswordDto.repetirPassword) {
+      throw new BadRequestException('La nueva contraseña y la confirmación no coinciden');
+    }
+
     const usuario = await this.usuarioRepository.findOne({ where: { idUsuario } });
     if (!usuario) {
       throw new NotFoundException('Usuario no encontrado');

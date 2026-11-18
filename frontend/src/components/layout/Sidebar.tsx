@@ -51,6 +51,28 @@ export const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
         }`}
       >
         <div className="space-y-6">
+          {/* SECCIÓN 0: NAVEGACIÓN GENERAL */}
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">
+              Principal
+            </p>
+            <ul className="space-y-1">
+              <li>
+                <Link href="/" onClick={onClose} className={navItemClass('/')}>
+                  <span>Inicio (Portal)</span>
+                </Link>
+              </li>
+              {user && (
+                <li>
+                  <Link href="/dashboard" onClick={onClose} className={navItemClass('/dashboard')}>
+                    <span>Mi Panel</span>
+                    <span className={chipClass('/dashboard')}>Core</span>
+                  </Link>
+                </li>
+              )}
+            </ul>
+          </div>
+
           {/* SECCIÓN 1: ACCESO PÚBLICO */}
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">
@@ -58,19 +80,19 @@ export const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
             </p>
             <ul className="space-y-1">
               <li>
-                <Link href="/" onClick={onClose} className={navItemClass('/')}>
+                <Link href="/mapa" onClick={onClose} className={navItemClass('/mapa')}>
                   <span>Visor Cartográfico</span>
-                  <span className={chipClass('/')}>S1</span>
+                  <span className={chipClass('/mapa')}>S1</span>
                 </Link>
               </li>
               <li>
-                <Link href="/" onClick={onClose} className={navItemClass('/alertas')}>
+                <Link href="/alertas" onClick={onClose} className={navItemClass('/alertas')}>
                   <span>Alertas y Evacuación</span>
                   <span className={chipClass('/alertas')}>S2</span>
                 </Link>
               </li>
               <li>
-                <Link href="/" onClick={onClose} className={navItemClass('/prevencion')}>
+                <Link href="/prevencion" onClick={onClose} className={navItemClass('/prevencion')}>
                   <span>Guías Prevención</span>
                   <span className={chipClass('/prevencion')}>S3</span>
                 </Link>
@@ -79,25 +101,27 @@ export const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
           </div>
 
           {/* SECCIÓN 2: CIUDADANO REGISTRADO (SPRINT 5 & 4) */}
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">
-              Ciudadano Registrado
-            </p>
-            <ul className="space-y-1">
-              <li>
-                <Link href="/perfil" onClick={onClose} className={navItemClass('/perfil')}>
-                  <span>Mi Perfil / Zonas</span>
-                  <span className={chipClass('/perfil')}>S5</span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/" onClick={onClose} className={navItemClass('/reportes')}>
-                  <span>Reportar Percepción</span>
-                  <span className={chipClass('/reportes')}>S4</span>
-                </Link>
-              </li>
-            </ul>
-          </div>
+          {user && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">
+                Ciudadano Registrado
+              </p>
+              <ul className="space-y-1">
+                <li>
+                  <Link href="/perfil" onClick={onClose} className={navItemClass('/perfil')}>
+                    <span>Mi Perfil / Zonas</span>
+                    <span className={chipClass('/perfil')}>S5</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/reportar" onClick={onClose} className={navItemClass('/reportar')}>
+                    <span>Reportar Percepción</span>
+                    <span className={chipClass('/reportar')}>S4</span>
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          )}
 
           {/* SECCIÓN 3: PANEL ADMINISTRATIVO / TÉCNICO */}
           {(isSismologo || isAdmin) && (
@@ -121,19 +145,19 @@ export const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                 {isSismologo && (
                   <>
                     <li>
-                      <Link href="/" onClick={onClose} className={navItemClass('/monitoreo')}>
+                      <Link href="/monitoreo" onClick={onClose} className={navItemClass('/monitoreo')}>
                         <span>Catálogo Sísmico</span>
                         <span className={chipClass('/monitoreo')}>S7</span>
                       </Link>
                     </li>
                     <li>
-                      <Link href="/" onClick={onClose} className={navItemClass('/auditoria')}>
+                      <Link href="/auditoria" onClick={onClose} className={navItemClass('/auditoria')}>
                         <span>Auditoría Ciudadana</span>
                         <span className={chipClass('/auditoria')}>S4</span>
                       </Link>
                     </li>
                     <li>
-                      <Link href="/" onClick={onClose} className={navItemClass('/estadisticas')}>
+                      <Link href="/estadisticas" onClick={onClose} className={navItemClass('/estadisticas')}>
                         <span>Reportes Estadísticos</span>
                         <span className={chipClass('/estadisticas')}>S6</span>
                       </Link>

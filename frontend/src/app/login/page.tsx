@@ -28,7 +28,7 @@ export default function LoginPage() {
 
       setStoredToken(data.token);
       setStoredUser(data.usuario);
-      router.push('/perfil');
+      router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Error al iniciar sesión');
     } finally {

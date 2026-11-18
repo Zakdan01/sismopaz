@@ -12,4 +12,8 @@ export class ChangePasswordDto {
       'La nueva contraseña debe incluir al menos una mayúscula, una minúscula, un número y un carácter especial (@$!%*?&.)',
   })
   passwordNuevo: string;
+
+  @IsString({ message: 'Debe repetir la nueva contraseña' })
+  @IsNotEmpty({ message: 'La confirmación de contraseña es obligatoria' })
+  repetirPassword: string;
 }

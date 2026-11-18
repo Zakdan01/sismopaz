@@ -2,165 +2,286 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import { Input } from '../components/ui/Input';
-import { apiFetch } from '../lib/api';
+import { getStoredUser } from '../lib/api';
 
-export default function HomePage() {
-  const [macrodistritos, setMacrodistritos] = useState<any[]>([]);
+export default function LandingPage() {
+  const pathname = usePathname();
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    apiFetch('/macrodistritos')
-      .then((data) => setMacrodistritos(data))
-      .catch(() => {});
-  }, []);
+    const syncUser = () => {
+      setUser(getStoredUser());
+    };
+    syncUser();
+
+    window.addEventListener('auth-change', syncUser);
+    window.addEventListener('storage', syncUser);
+
+    return () => {
+      window.removeEventListener('auth-change', syncUser);
+      window.removeEventListener('storage', syncUser);
+    };
+  }, [pathname]);
 
   return (
-    <div className="space-y-6">
-      {/* BANNER DE ALERTA SEVERA (Restringido - diseño oficial) */}
-      <div className="bg-rose-600 text-white p-5 rounded-lg shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xl">⚠️</span>
-            <strong className="text-lg">ALERTA SÍSMICA SEVERA</strong>
+    <div className="space-y-16 py-4 max-w-6xl mx-auto">
+      {/* SECCIÓN HERO */}
+      <section className="text-center space-y-6 pt-6 pb-8">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-100 text-orange-800 text-xs font-semibold tracking-wide">
+          <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+          Plataforma Sísmica Oficial La Paz · WGS 84
+        </div>
+
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-zinc-900 tracking-tight leading-tight">
+          Sistema de Información Sísmica <br />
+          <span className="text-orange-500">SismoPaz</span>
+        </h1>
+
+        <p className="max-w-2xl mx-auto text-base sm:text-lg text-zinc-600 leading-relaxed">
+          Plataforma geoespacial integral para el monitoreo sísmico, alertas ciudadanas tempranas, difusión preventiva y reporte de percepción en los 9 macrodistritos del Municipio de La Paz.
+        </p>
+
+        <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+          {user ? (
+            <Link href="/dashboard">
+              <Button variant="accent" className="text-base px-6 py-3 min-h-[48px]">
+                Ir a Mi Panel de Control →
+              </Button>
+            </Link>
+          ) : (
+            <>
+              <Link href="/login">
+                <Button variant="primary" className="text-base px-6 py-3 min-h-[48px]">
+                  Iniciar Sesión
+                </Button>
+              </Link>
+              <Link href="/register">
+                <Button variant="outline" className="text-base px-6 py-3 min-h-[48px]">
+                  Registrarse como Ciudadano
+                </Button>
+              </Link>
+            </>
+          )}
+          <Link href="/mapa">
+            <Button variant="outline" className="text-base px-6 py-3 min-h-[48px] border-zinc-300">
+              Ver Mapa en Vivo 🗺️
+            </Button>
+          </Link>
+        </div>
+      </section>
+
+      {/* BANNER DE ALERTA RÁPIDA O ESTADO OPERATIVO */}
+      <section className="bg-zinc-900 text-white rounded-2xl p-6 sm:p-8 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-emerald-400 text-lg">●</span>
+            <span className="text-xs uppercase font-bold tracking-widest text-zinc-400">
+              Red de Monitoreo Activa
+            </span>
           </div>
-          <p className="text-sm text-white/95">
-            Sismo superficial registrado. Evacúe hacia puntos seguros. Macrodistritos prioritarios: Sur, Cotahuma.
+          <h2 className="text-xl sm:text-2xl font-bold text-white">
+            Monitoreo en tiempo continuo de los 9 Macrodistritos
+          </h2>
+          <p className="text-sm text-zinc-300 max-w-xl">
+            Cotahuma, Max Paredes, Periférica, San Antonio, Sur, Mallasa, Centro, Hampaturi y Zongo.
           </p>
         </div>
-        <button className="min-h-[44px] px-5 py-2.5 bg-white text-rose-600 font-bold rounded-lg text-sm hover:bg-zinc-100 transition-colors whitespace-nowrap">
-          Ver Puntos de Evacuación
-        </button>
-      </div>
+        <Link href="/alertas">
+          <Button variant="severe" className="whitespace-nowrap">
+            Consultar Alertas y Zonas Seguras
+          </Button>
+        </Link>
+      </section>
 
-      {/* TITULO Y DESCRIPCION */}
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-900">Monitoreo Cartográfico de Sismos</h1>
-        <p className="text-zinc-500 text-sm">
-          Información sísmica georreferenciada de la ciudad de La Paz (Datum WGS 84 / EPSG:4326).
-        </p>
-      </div>
-
-      {/* GRID PRINCIPAL: FILTROS + CATÁLOGO + MAPA */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* COLUMNA IZQUIERDA: FILTROS Y CATÁLOGO RECIENTE */}
-        <div className="space-y-6 lg:col-span-1">
-          {/* Tarjeta de Filtros */}
-          <Card title="Filtros de Búsqueda">
-            <div className="mb-4">
-              <label className="block text-sm font-semibold mb-1.5 text-zinc-900">
-                Ubicación (Macrodistrito)
-              </label>
-              <select className="w-full min-h-[44px] px-4 py-2 bg-white border border-zinc-200 rounded-lg text-zinc-800 text-sm focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/15 transition-all">
-                <option value="">Toda La Paz</option>
-                {macrodistritos.map((m) => (
-                  <option key={m.idMacrodistrito} value={m.idMacrodistrito}>
-                    {m.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="accent" className="flex-1">
-                Filtrar
-              </Button>
-              <Button variant="outline" className="flex-1">
-                Limpiar
-              </Button>
-            </div>
-          </Card>
-
-          {/* Tarjeta de Catálogo Reciente */}
-          <div className="bg-white border border-zinc-200 rounded-lg overflow-hidden shadow-sm">
-            <div className="p-4 border-b border-zinc-200 bg-zinc-50">
-              <h2 className="font-bold text-zinc-900 text-sm">Catálogo Reciente</h2>
-            </div>
-            <div className="divide-y divide-zinc-200">
-              <div className="p-4 hover:bg-zinc-50 cursor-pointer border-l-4 border-orange-500">
-                <div className="flex justify-between items-start mb-1">
-                  <strong className="text-zinc-900 text-sm">Macrodistrito Sur</strong>
-                  <Badge variant="warning">4.2 Mw</Badge>
-                </div>
-                <p className="text-xs text-zinc-500">
-                  18 Nov 2026 - 03:15 BOT · Profundidad: 45.0 km
-                </p>
-              </div>
-              <div className="p-4 hover:bg-zinc-50 cursor-pointer border-l-4 border-emerald-500">
-                <div className="flex justify-between items-start mb-1">
-                  <strong className="text-zinc-900 text-sm">Cotahuma</strong>
-                  <Badge variant="success">3.1 Mw</Badge>
-                </div>
-                <p className="text-xs text-zinc-500">
-                  17 Nov 2026 - 22:40 BOT · Profundidad: 18.0 km
-                </p>
-              </div>
-            </div>
-          </div>
+      {/* PILARES / CAPACIDADES */}
+      <section className="space-y-6">
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-900">
+            ¿Cómo Funciona SismoPaz?
+          </h2>
+          <p className="text-sm text-zinc-500 max-w-lg mx-auto">
+            Integración de instrumentación geofísica, análisis sismológico y participación ciudadana abierta.
+          </p>
         </div>
-
-        {/* COLUMNA DERECHA: VISOR DE MAPA */}
-        <div className="lg:col-span-2">
-          <Card className="p-0 overflow-hidden min-h-[450px] flex flex-col">
-            <div className="p-4 border-b border-zinc-200 flex justify-between items-center bg-zinc-50">
-              <h2 className="font-bold text-zinc-900 text-sm">Mapa Cartográfico Interactivo</h2>
-              <span className="text-xs font-semibold px-2 py-1 bg-zinc-200 text-zinc-700 rounded">
-                WGS 84 (EPSG:4326)
-              </span>
-            </div>
-            <div className="flex-1 bg-zinc-100 flex items-center justify-center p-8 text-center min-h-[380px]">
-              <div className="max-w-md">
-                <p className="font-semibold text-zinc-800 text-base mb-1">
-                  [ Contenedor Cartográfico Leaflet / PostGIS ]
-                </p>
-                <p className="text-xs text-zinc-500 mb-4">
-                  Área asignada al Sprint 1 (Grupo 4) y Sprint 7 (Grupo 19).
-                </p>
-                <div className="inline-flex items-center gap-2 text-xs text-zinc-600 bg-white px-3 py-1.5 rounded border border-zinc-200">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
-                  API REST conectada con PostgreSQL 18
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </div>
-
-      {/* CATÁLOGO DE COMPONENTES UI KIT DE REFERENCIA */}
-      <div className="pt-6 border-t-2 border-dashed border-zinc-200">
-        <h2 className="text-xl font-bold text-zinc-900 mb-1">Catálogo de Componentes Base (UI Kit)</h2>
-        <p className="text-zinc-500 text-sm mb-6">
-          Referencia visual para todos los módulos y grupos de desarrollo (Sprints 1 al 7).
-        </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card title="Sistema de Botones" subtitle="Altura 44px (RNF02) y estados">
-            <div className="flex flex-col gap-3">
-              <Button variant="primary">Primario (Navegación / Login)</Button>
-              <Button variant="accent">Acento (Guardar / Filtrar)</Button>
-              <Button variant="outline">Secundario (Cancelar)</Button>
-              <Button variant="severe">Destructivo (Restringido)</Button>
-              <Button disabled>Deshabilitado</Button>
+          <Card className="hover:border-zinc-300 transition-all p-6">
+            <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center text-2xl mb-4">
+              🗺️
             </div>
+            <h3 className="text-lg font-bold text-zinc-900 mb-2">
+              Cartografía & Catálogo
+            </h3>
+            <p className="text-sm text-zinc-600 leading-relaxed">
+              Visualización georreferenciada bajo datum WGS 84. Simbología proporcional por magnitud instrumental (Mw, Ml) y profundidad focal del hipocentro.
+            </p>
           </Card>
 
-          <Card title="Formularios e Inputs" subtitle="Manejo de Focus Ring naranja">
-            <Input label="Magnitud Calculada (Mw)" placeholder="Ej. 4.8" defaultValue="4.8" />
-            <Input label="Profundidad Focal (km)" placeholder="Ej. 35.0" />
-            <Input label="Campo con Error (Simulado)" error="Este campo es obligatorio" />
+          <Card className="hover:border-zinc-300 transition-all p-6">
+            <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-2xl mb-4">
+              🔔
+            </div>
+            <h3 className="text-lg font-bold text-zinc-900 mb-2">
+              Alertas Zonales y Evacuación
+            </h3>
+            <p className="text-sm text-zinc-600 leading-relaxed">
+              Difusión pública de alertas según nivel de gravedad (Informativa, Moderada, Severa) y localización de puntos seguros de evacuación oficial.
+            </p>
           </Card>
 
-          <Card title="Etiquetas Semánticas" subtitle="Badges de estado del catálogo">
-            <div className="flex flex-col gap-3 items-start">
-              <Badge variant="success">Sismo Registrado / Validado</Badge>
-              <Badge variant="warning">Reporte Pendiente</Badge>
-              <Badge variant="info">Revisado (Sismólogo)</Badge>
-              <Badge variant="severe">Alerta Severa</Badge>
+          <Card className="hover:border-zinc-300 transition-all p-6">
+            <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-2xl mb-4">
+              🤝
             </div>
+            <h3 className="text-lg font-bold text-zinc-900 mb-2">
+              Reportes Ciudadanos MMI
+            </h3>
+            <p className="text-sm text-zinc-600 leading-relaxed">
+              La población puede reportar la intensidad percibida mediante la Escala de Mercalli Modificada (I al XII), con auditoría y validación sismológica.
+            </p>
           </Card>
         </div>
-      </div>
+      </section>
+
+      {/* ROLES Y PERMISOS */}
+      <section className="space-y-6 pt-4">
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-900">
+            Perfiles de Acceso al Sistema
+          </h2>
+          <p className="text-sm text-zinc-500 max-w-lg mx-auto">
+            Control de acceso basado en roles (RBAC) con trazabilidad y autenticación segura JWT.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white border border-zinc-200 rounded-xl p-6 space-y-4 shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-2xl">👤</span>
+                <Badge variant="info">Ciudadano</Badge>
+              </div>
+              <h3 className="text-lg font-bold text-zinc-900">Población General</h3>
+              <ul className="text-xs text-zinc-600 space-y-2 mt-3">
+                <li>• Consulta del catálogo y mapa de sismos</li>
+                <li>• Lectura de alertas y guías de contingencia</li>
+                <li>• Suscripción personalizada a macrodistritos</li>
+                <li>• Reporte de sismos sentidos con GPS y escala MMI</li>
+              </ul>
+            </div>
+            <Link href="/register">
+              <Button variant="outline" className="w-full text-xs">
+                Registrarme
+              </Button>
+            </Link>
+          </div>
+
+          <div className="bg-white border-2 border-orange-400 rounded-xl p-6 space-y-4 shadow-sm flex flex-col justify-between relative">
+            <div className="absolute -top-3 right-4 bg-orange-500 text-white text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full">
+              Personal Técnico
+            </div>
+            <div>
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-2xl">🔬</span>
+                <Badge variant="warning">Sismólogo</Badge>
+              </div>
+              <h3 className="text-lg font-bold text-zinc-900">Cuerpo Sismológico</h3>
+              <ul className="text-xs text-zinc-600 space-y-2 mt-3">
+                <li>• Registro y edición técnica de eventos sísmicos</li>
+                <li>• Emisión y cierre de alertas zonales de emergencia</li>
+                <li>• Auditoría y validación de reportes ciudadanos</li>
+                <li>• Acreditación requerida (ej. Observatorio San Calixto)</li>
+              </ul>
+            </div>
+            <Link href="/login">
+              <Button variant="accent" className="w-full text-xs">
+                Ingreso Especialistas
+              </Button>
+            </Link>
+          </div>
+
+          <div className="bg-white border border-zinc-200 rounded-xl p-6 space-y-4 shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-2xl">⚙️</span>
+                <Badge variant="severe">Administrador</Badge>
+              </div>
+              <h3 className="text-lg font-bold text-zinc-900">Gobernanza & TI</h3>
+              <ul className="text-xs text-zinc-600 space-y-2 mt-3">
+                <li>• Habilitación y suspensión preventiva de cuentas</li>
+                <li>• Asignación de rol Sismólogo con matrícula técnica</li>
+                <li>• Mantenimiento de puntos de evacuación y directorio</li>
+                <li>• Auditoría global de operaciones del sistema</li>
+              </ul>
+            </div>
+            <Link href="/login">
+              <Button variant="primary" className="w-full text-xs">
+                Acceso de Administración
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ESTRUCTURA MODULAR / SPRINTS */}
+      <section className="bg-zinc-50 border border-zinc-200 rounded-2xl p-6 sm:p-8 space-y-6">
+        <div className="text-center space-y-1">
+          <h2 className="text-xl sm:text-2xl font-bold text-zinc-900">
+            Arquitectura Modular del Proyecto
+          </h2>
+          <p className="text-xs text-zinc-500">
+            Desarrollo colaborativo estructurado en 7 sprints independientes
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 text-xs">
+          <div className="p-3 bg-white rounded-lg border border-zinc-200">
+            <strong className="text-zinc-900 block font-bold">Sprint 1 (G4)</strong>
+            <span className="text-zinc-500">Mapa & Ficha Sísmica</span>
+          </div>
+          <div className="p-3 bg-white rounded-lg border border-zinc-200">
+            <strong className="text-zinc-900 block font-bold">Sprint 2 (G2)</strong>
+            <span className="text-zinc-500">Alertas & Evacuación</span>
+          </div>
+          <div className="p-3 bg-white rounded-lg border border-zinc-200">
+            <strong className="text-zinc-900 block font-bold">Sprint 3 (G3)</strong>
+            <span className="text-zinc-500">Guías Preventivas</span>
+          </div>
+          <div className="p-3 bg-white rounded-lg border border-zinc-200 border-l-4 border-l-orange-500">
+            <strong className="text-zinc-900 block font-bold">Sprint 4 (G18-A)</strong>
+            <span className="text-zinc-500">Reportes e Intensidad MMI</span>
+          </div>
+          <div className="p-3 bg-white rounded-lg border border-zinc-200 border-l-4 border-l-orange-500">
+            <strong className="text-zinc-900 block font-bold">Sprint 5 (G18-B)</strong>
+            <span className="text-zinc-500">Usuarios, Auth & Roles</span>
+          </div>
+          <div className="p-3 bg-white rounded-lg border border-zinc-200">
+            <strong className="text-zinc-900 block font-bold">Sprint 6 (G14)</strong>
+            <span className="text-zinc-500">Estadísticas & Reportes</span>
+          </div>
+          <div className="p-3 bg-white rounded-lg border border-zinc-200">
+            <strong className="text-zinc-900 block font-bold">Sprint 7 (G19)</strong>
+            <span className="text-zinc-500">Catálogo & Monitoreo</span>
+          </div>
+          <div className="p-3 bg-zinc-100 rounded-lg border border-dashed border-zinc-300 flex items-center justify-center text-zinc-500 font-semibold">
+            PostgreSQL 18 + PostGIS
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="pt-8 pb-4 border-t border-zinc-200 text-center text-xs text-zinc-500 space-y-2">
+        <p className="font-semibold text-zinc-700">
+          SismoPaz — Sistema de Información Sísmica La Paz · 2026
+        </p>
+        <p>
+          Desarrollado para el Municipio de La Paz, Bolivia · Estándar Geodésico WGS 84
+        </p>
+      </footer>
     </div>
   );
 }

@@ -36,6 +36,21 @@ export class AdminController {
     return this.adminService.getAllRoles();
   }
 
+  @Get('solicitudes-sismologo')
+  async getSolicitudesSismologo() {
+    return this.adminService.getSolicitudesSismologo();
+  }
+
+  @Post('solicitudes/:id/aprobar')
+  async aprobarSolicitud(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.aprobarSolicitud(id);
+  }
+
+  @Post('solicitudes/:id/rechazar')
+  async rechazarSolicitud(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.rechazarSolicitud(id);
+  }
+
   @Get('users/:id')
   async getUserById(@Param('id', ParseIntPipe) id: number) {
     return this.adminService.getUserById(id);

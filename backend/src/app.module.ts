@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import * as dotenv from 'dotenv';
+import { AppController } from './app.controller';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
@@ -40,5 +41,6 @@ dotenv.config();
     SubscriptionsModule,
     AdminModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}

@@ -133,8 +133,8 @@ WHERE u.correo = 'ciudadano@sismopaz.bo' AND r.nombre = 'Ciudadano'
 ON CONFLICT DO NOTHING;
 
 -- Perfil sismológico oficial para el Sismólogo (RF5.03)
-INSERT INTO perfiles_sismologo (id_usuario, numero_acreditacion, institucion_acreditadora, fecha_verificacion, vigente)
-SELECT u.id_usuario, 'SIS-LP-2026-001', 'Observatorio San Calixto', CURRENT_DATE, true
+INSERT INTO perfiles_sismologo (id_usuario, numero_acreditacion, institucion_acreditadora, fecha_verificacion, vigente, estado_solicitud)
+SELECT u.id_usuario, 'SIS-LP-2026-001', 'Observatorio San Calixto', CURRENT_DATE, true, 'APROBADA'
 FROM usuarios u WHERE u.correo = 'sismologo@sismopaz.bo'
 ON CONFLICT (id_usuario) DO NOTHING;
 

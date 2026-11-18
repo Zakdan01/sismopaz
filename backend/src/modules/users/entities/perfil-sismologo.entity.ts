@@ -18,6 +18,9 @@ export class PerfilSismologo {
   @Column({ default: true })
   vigente: boolean;
 
+  @Column({ name: 'estado_solicitud', length: 50, default: 'APROBADA' })
+  estadoSolicitud: string;
+
   @OneToOne(() => Usuario, (usuario) => usuario.perfilSismologo)
   @JoinColumn({ name: 'id_usuario' })
   usuario: Usuario;
