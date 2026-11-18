@@ -1,0 +1,23 @@
+# ============================================
+# SISMOPAZ - Archivos excluidos de Git
+# ============================================
+
+# Dependencias de Node.js (se reinstalan con npm install)
+node_modules/
+
+# Build del Backend (se regenera con npx tsc)
+backend/dist/
+
+# Cache de Next.js (se regenera automáticamente)
+frontend/.next/
+
+# Variables de entorno (contiene contraseñas)
+.env
+
+# Reportes generados por scripts
+reporte-validacion.txt
+
+# Archivos del sistema operativo
+Thumbs.db
+Desktop.ini
+.DS_Store
